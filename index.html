@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CGU TEAM | Real-Time Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+Arabic:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<style>
+:root{
+  --bg:#070918; --card:rgba(22,25,58,.62); --card-h:rgba(34,38,86,.8); --modal:#0d1030;
+  --line:rgba(139,148,255,.16); --line-h:rgba(139,148,255,.4);
+  --violet:#8b5cf6; --indigo:#6366f1; --blue:#3b82f6; --cyan:#38bdf8;
+  --grad:linear-gradient(135deg,#8b5cf6,#3b82f6);
+  --grad-soft:linear-gradient(135deg,rgba(139,92,246,.22),rgba(59,130,246,.22));
+  --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+  --text:#eef0ff; --dim:#8f95c4;
+  --ease:.35s cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;scrollbar-width:thin;scrollbar-color:#4b4fa8 transparent}
+html,body{height:100%}
+body{font-family:'Plus Jakarta Sans','Noto Sans Arabic','Noto Sans Devanagari',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;display:flex;flex-direction:column}
+button,input,select,textarea{font-family:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+.bg{position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse at 20% 0%,#1b1250 0%,transparent 55%),radial-gradient(ellipse at 90% 100%,#0b2a66 0%,transparent 55%),var(--bg)}
+.orb{position:absolute;border-radius:50%;filter:blur(110px);opacity:.28;animation:drift 22s infinite alternate ease-in-out}
+.orb.a{width:46vw;height:46vw;background:var(--violet);top:-12%;left:-12%}
+.orb.b{width:50vw;height:50vw;background:var(--blue);bottom:-18%;right:-14%;animation-delay:-6s}
+@keyframes drift{to{transform:translate(8%,-8%) scale(1.1)}}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:14px;padding:12px 20px;padding-top:max(12px,env(safe-area-inset-top));border-bottom:1px solid var(--line);background:rgba(10,12,34,.7);backdrop-filter:blur(16px);flex-shrink:0;z-index:20}
+.menu-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:16px;cursor:pointer;transition:var(--ease);display:grid;place-items:center;flex-shrink:0}
+.menu-btn:hover{border-color:var(--violet);background:var(--card-h)}
+.top-title{font-weight:800;font-size:17px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-title small{display:block;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0;margin-top:1px}
+.pill{margin-inline-start:auto;display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card);font-size:12px;font-weight:700;flex-shrink:0}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.pill.off .dot{background:var(--err);box-shadow:0 0 10px var(--err)}
+
+/* SIDEBAR DRAWER */
+.overlay{position:fixed;inset:0;z-index:40;background:rgba(3,4,16,.6);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity var(--ease)}
+body.menu-open .overlay{opacity:1;pointer-events:all}
+.sidebar{position:fixed;top:0;bottom:0;left:0;width:min(290px,84vw);z-index:50;display:flex;flex-direction:column;padding:26px 18px;padding-top:max(26px,env(safe-area-inset-top));background:rgba(12,14,42,.96);backdrop-filter:blur(20px);border-right:1px solid var(--line);transform:translateX(-102%);transition:transform var(--ease);box-shadow:20px 0 60px rgba(0,0,0,.5)}
+body.menu-open .sidebar{transform:none}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:34px;padding:0 6px}
+.brand-icon{width:44px;height:44px;border-radius:13px;background:var(--grad);display:grid;place-items:center;font-size:19px;box-shadow:0 8px 24px rgba(99,102,241,.45)}
+.brand-name{font-size:20px;font-weight:800;letter-spacing:1px;background:linear-gradient(90deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.brand-sub{font-size:11px;color:var(--dim);margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:6px;flex:1}
+.nav-item{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:12px;color:var(--dim);font-weight:600;font-size:14.5px;cursor:pointer;border:1px solid transparent;transition:var(--ease);background:none;text-align:left;width:100%}
+.nav-item i{width:22px;text-align:center;font-size:16px}
+.nav-item:hover{color:#fff;background:rgba(139,92,246,.1)}
+.nav-item.active{color:#fff;background:var(--grad-soft);border-color:var(--line-h)}
+.nav-item.active i{color:var(--cyan)}
+.side-foot{padding:16px 8px 0;border-top:1px solid var(--line);font-size:12px;color:var(--dim);line-height:1.5}
+.side-foot b{display:block;color:var(--ok);font-size:13px}
+
+/* PAGES */
+.main{flex:1;position:relative;min-height:0}
+.page{position:absolute;inset:0;padding:24px clamp(16px,4vw,40px) 40px;overflow-y:auto;display:none;flex-direction:column}
+.page.active{display:flex;animation:fade .45s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+.page-title{font-size:clamp(24px,4vw,32px);font-weight:800}
+.page-sub{color:var(--dim);font-size:14px;margin-top:4px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+
+.btn{padding:10px 18px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;transition:var(--ease);display:inline-flex;align-items:center;gap:9px}
+.btn:hover{border-color:var(--violet);background:var(--card-h);transform:translateY(-2px)}
+.btn.primary{background:var(--grad);border:0;color:#fff;box-shadow:0 8px 24px rgba(99,102,241,.4)}
+.btn.primary:hover{box-shadow:0 10px 32px rgba(99,102,241,.6)}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;backdrop-filter:blur(14px);transition:var(--ease)}
+.stat:hover{transform:translateY(-4px);border-color:var(--line-h);background:var(--card-h)}
+.stat-icon{width:42px;height:42px;border-radius:12px;background:var(--grad-soft);color:var(--cyan);display:grid;place-items:center;font-size:17px;margin-bottom:16px}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:clamp(24px,3vw,30px);font-weight:700;word-break:break-all}
+.stat-label{color:var(--dim);font-size:13px;font-weight:600;margin-top:4px}
+.stat-foot{color:var(--cyan);font-size:12px;font-weight:600;margin-top:10px}
+
+/* CONTROLS */
+.controls{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.search{flex:1;min-width:220px;position:relative}
+.search i{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--dim)}
+.search input{width:100%;padding:12px 14px 12px 40px;border-radius:11px;border:1px solid var(--line);background:rgba(5,6,22,.5);color:#fff;font-size:13px;outline:none;transition:var(--ease)}
+.search input:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(139,92,246,.18)}
+.seg{display:flex;gap:4px;padding:4px;border-radius:11px;background:rgba(5,6,22,.5);border:1px solid var(--line);overflow-x:auto;max-width:100%}
+.seg button{border:0;background:none;color:var(--dim);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap;transition:var(--ease)}
+.seg button:hover{color:#fff}
+.seg button.active{color:#fff;background:var(--grad)}
+
+/* NODES */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:16px}
+.node{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;backdrop-filter:blur(14px);transition:var(--ease);position:relative;overflow:hidden}
+.node::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--grad)}
+.node:hover{border-color:var(--line-h);transform:translateY(-3px);background:var(--card-h)}
+.node-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+.who{display:flex;align-items:center;gap:13px;min-width:0}
+.avatar{position:relative;width:46px;height:46px;flex-shrink:0;border-radius:13px;background:var(--grad-soft);border:1px solid var(--line-h);display:grid;place-items:center;color:var(--cyan);font-size:19px}
+.lvl{position:absolute;right:-7px;bottom:-7px;padding:2px 6px;border-radius:7px;font-size:9px;font-weight:800;font-family:'JetBrains Mono',monospace;background:var(--grad);border:2px solid var(--bg)}
+.name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;min-width:0}
+.name span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.region{padding:2px 7px;border-radius:5px;font-size:9.5px;font-weight:800;color:var(--violet);background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3)}
+.uid{display:flex;align-items:center;gap:8px;margin-top:4px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px}
+.uid i{cursor:pointer}.uid i:hover{color:#fff}
+.badge{padding:6px 10px;border-radius:9px;font-size:10.5px;font-weight:800;display:flex;align-items:center;gap:6px;border:1px solid;flex-shrink:0}
+.s-online{color:var(--ok);background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3)}
+.s-match{color:var(--cyan);background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.4);box-shadow:0 0 14px rgba(56,189,248,.25)}
+.s-paused{color:var(--dim);background:rgba(143,149,196,.1);border-color:rgba(143,149,196,.3)}
+.s-error{color:var(--warn);background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.3)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}
+.metric{padding:10px;border-radius:10px;background:rgba(5,6,22,.5);border:1px solid rgba(255,255,255,.05);min-width:0}
+.metric span{display:block;color:var(--dim);font-size:10.5px;font-weight:600;margin-bottom:4px}
+.metric strong{display:block;font-family:'JetBrains Mono',monospace;font-size:12.5px;overflow:hidden;text-overflow:ellipsis}
+.metric.gain strong{color:var(--ok)}
+.prog-top,.prog-bot{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);font-weight:600}
+.prog-bot{font-family:'JetBrains Mono',monospace;margin-top:6px}
+.prog-bot .pct{color:var(--cyan);font-weight:700}
+.track{height:7px;margin-top:7px;background:rgba(5,6,22,.7);border-radius:9px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--blue),var(--cyan));transition:width .8s ease;border-radius:9px}
+.node-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)}
+.time{color:var(--dim);font-size:11.5px;display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace}
+.acts{display:flex;gap:7px}
+.act{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:rgba(5,6,22,.4);color:var(--dim);cursor:pointer;font-size:12px;transition:var(--ease);display:grid;place-items:center}
+.act:hover{color:#fff;border-color:var(--violet);background:rgba(139,92,246,.15);transform:translateY(-2px)}
+.act.danger:hover{color:var(--err);border-color:var(--err);background:rgba(248,113,113,.1)}
+.empty{grid-column:1/-1;text-align:center;padding:56px 16px;color:var(--dim)}
+.empty i{font-size:30px;margin-bottom:14px;color:var(--violet);display:block}
+.empty .btn{margin-top:18px}
+
+/* TERMINAL */
+.term{flex:1;min-height:320px;display:flex;flex-direction:column;border-radius:18px;border:1px solid var(--line);background:rgba(6,7,24,.82);overflow:hidden;backdrop-filter:blur(14px)}
+.term-head{padding:12px 18px;border-bottom:1px solid var(--line);background:rgba(20,22,60,.7);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan)}
+.term-body{padding:16px 18px;overflow-y:auto;flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.75;color:#d4d7f5}
+.log{display:flex;gap:10px;margin-bottom:4px;word-break:break-word}
+.log-ts{color:var(--violet);flex-shrink:0}
+.log-msg.success{color:var(--ok)}.log-msg.warning{color:var(--warn)}.log-msg.error{color:var(--err)}
+
+/* MODAL */
+.modal{position:fixed;inset:0;z-index:100;background:rgba(3,4,16,.78);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:var(--ease)}
+.modal.active{opacity:1;pointer-events:all}
+.card{width:100%;max-width:440px;max-height:92vh;overflow-y:auto;background:var(--modal);border:1px solid var(--line-h);border-radius:20px;padding:28px;transform:translateY(30px) scale(.96);transition:var(--ease);box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 60px rgba(99,102,241,.2);position:relative}
+.card::before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--grad)}
+.modal.active .card{transform:none}
+.card h2{font-size:22px;font-weight:800;margin-bottom:6px}
+.card p{color:var(--dim);font-size:13px;margin-bottom:22px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--cyan);margin-bottom:8px}
+.field input,.field select,.field textarea{width:100%;padding:13px;border-radius:10px;background:rgba(5,6,22,.6);border:1px solid var(--line);color:#fff;font-size:14px;outline:none;transition:var(--ease)}
+.field textarea{min-height:100px;resize:vertical;font-family:'JetBrains Mono',monospace}
+.field select option{background:#0d1030}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(139,92,246,.18)}
+.card-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:26px}
+
+/* PROFILE */
+.hero{position:relative;border-radius:20px;border:1px solid var(--line);background:var(--card);backdrop-filter:blur(14px);overflow:hidden;margin-bottom:16px}
+.hero-banner{height:110px;background:linear-gradient(120deg,#6d28d9,#4f46e5 50%,#0ea5e9);position:relative}
+.hero-banner::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 0%,rgba(255,255,255,.25),transparent 55%)}
+.hero-body{display:flex;align-items:flex-end;gap:18px;padding:0 24px 22px;margin-top:-42px;flex-wrap:wrap;position:relative}
+.hero-avatar{width:92px;height:92px;border-radius:24px;background:var(--grad);border:4px solid var(--bg);display:grid;place-items:center;font-size:30px;font-weight:800;letter-spacing:1px;box-shadow:0 12px 32px rgba(99,102,241,.5);flex-shrink:0}
+.hero-name{font-size:clamp(22px,4vw,28px);font-weight:800}
+.hero-tag{color:var(--dim);font-size:13.5px;margin-top:3px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-inline-start:auto}
+.chip{padding:7px 12px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid var(--line-h);background:var(--grad-soft);display:inline-flex;align-items:center;gap:7px}
+.chip i{color:var(--cyan)}
+.info{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 22px;backdrop-filter:blur(14px);margin-top:16px}
+.info-row{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13.5px}
+.info-row:last-child{border:0}
+.info-row span{color:var(--dim)}.info-row b{font-weight:700;text-align:right}
+@media(max-width:600px){.chips{margin-inline-start:0}.hero-body{padding:0 18px 20px}}
+
+/* TOAST */
+.toasts{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));right:20px;left:20px;z-index:200;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
+.toast{max-width:100%;background:rgba(12,14,42,.96);border:1px solid var(--line);border-left:4px solid var(--violet);padding:13px 18px;border-radius:12px;display:flex;align-items:center;gap:11px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:tin .35s var(--ease) both;pointer-events:auto}
+.toast.success{border-left-color:var(--ok)}.toast.error{border-left-color:var(--err)}.toast.hide{opacity:0;transform:translateX(30px);transition:.35s}
+@keyframes tin{from{opacity:0;transform:translateX(40px)}}
+
+@media(max-width:600px){
+  .topbar{padding:10px 14px}.pill span{display:none}.pill{padding:9px}
+  .metrics{grid-template-columns:1fr 1fr}.metric:last-child{grid-column:1/-1}
+  .node-head{flex-wrap:wrap}.btn{padding:10px 14px}
+  .page-head .row,.page-head .row .btn{width:100%}.page-head .row .btn{justify-content:center}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===== UPGRADE: efek premium ===== */
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes spin{to{--ang:360deg}}
+@keyframes flow{to{background-position:200% 0}}
+@keyframes rise{from{opacity:0;transform:translateY(26px) scale(.96)}}
+@keyframes pulse{50%{box-shadow:0 0 24px rgba(56,189,248,.6)}}
+@keyframes floaty{50%{transform:translateY(-5px)}}
+@keyframes sweep{to{transform:translateX(260%) skewX(-20deg)}}
+
+.bg::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(139,148,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(139,148,255,.07) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse at 50% 30%,#000 0%,transparent 72%);mask-image:radial-gradient(ellipse at 50% 30%,#000 0%,transparent 72%)}
+.orb{opacity:.38}
+.orb.c{width:30vw;height:30vw;background:var(--cyan);top:40%;left:45%;opacity:.14;animation-duration:28s;animation-delay:-12s}
+
+.topbar{box-shadow:0 1px 0 rgba(139,92,246,.35),0 12px 40px rgba(0,0,0,.3)}
+.top-title span{background:linear-gradient(90deg,#fff,#a5b4fc);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.dot{animation:pulse 2s infinite}
+
+.brand-name{background:linear-gradient(90deg,#fff,#a78bfa,#38bdf8,#fff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:flow 6s linear infinite}
+.brand-icon{animation:floaty 4s ease-in-out infinite}
+.sidebar{background:linear-gradient(180deg,rgba(20,18,64,.97),rgba(9,12,38,.97))}
+.nav-item{position:relative}
+.nav-item:hover{transform:translateX(4px)}
+.nav-item.active{box-shadow:0 8px 28px rgba(99,102,241,.25)}
+.nav-item.active::before{content:'';position:absolute;left:-18px;top:20%;bottom:20%;width:4px;border-radius:0 4px 4px 0;background:var(--grad);box-shadow:0 0 14px var(--violet)}
+
+.stat,.node,.hero,.info{position:relative}
+.stat:hover,.node:hover,.hero:hover,.info:hover{background-image:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(139,92,246,.18),transparent 45%)}
+.stat::after,.node::after,.hero::after,.info::after{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;opacity:0;transition:opacity .4s;background:conic-gradient(from var(--ang),transparent 0 55%,#8b5cf6,#38bdf8,transparent);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);animation:spin 3.5s linear infinite}
+.stat:hover::after,.node:hover::after,.hero:hover::after,.info:hover::after{opacity:1}
+
+.stat{padding:24px}
+.stat-val{background:linear-gradient(90deg,#fff,#c4b5fd 60%,#7dd3fc);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:clamp(26px,3.2vw,34px)}
+.stat-icon{box-shadow:0 0 26px rgba(99,102,241,.45),inset 0 0 0 1px rgba(165,180,252,.25);animation:floaty 5s ease-in-out infinite}
+.stat:nth-child(2) .stat-icon{animation-delay:-1s}.stat:nth-child(3) .stat-icon{animation-delay:-2s}.stat:nth-child(4) .stat-icon{animation-delay:-3s}
+
+.page.active .stat,.page.active .node,.page.active .hero,.page.active .info,.page.active .term{animation:rise .65s cubic-bezier(.2,.8,.2,1) backwards}
+.page.active .stat:nth-child(2),.page.active .node:nth-child(2){animation-delay:.08s}
+.page.active .stat:nth-child(3),.page.active .node:nth-child(3){animation-delay:.16s}
+.page.active .stat:nth-child(4),.page.active .node:nth-child(4){animation-delay:.24s}
+.page.active .node:nth-child(n+5){animation-delay:.3s}
+
+.btn.primary{position:relative;overflow:hidden}
+.btn.primary::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg)}
+.btn.primary:hover::after{animation:sweep .8s ease}
+
+.s-match{animation:pulse 2s infinite}
+.fill{background-size:200% 100%;animation:flow 3s linear infinite;box-shadow:0 0 14px rgba(99,102,241,.7)}
+.avatar{box-shadow:0 0 22px rgba(99,102,241,.35)}
+
+.hero-banner{background:linear-gradient(120deg,#6d28d9,#4f46e5,#0ea5e9,#6d28d9);background-size:200% 100%;animation:flow 10s linear infinite}
+.hero-avatar{animation:floaty 5s ease-in-out infinite}
+.hero-name{background:linear-gradient(90deg,#fff,#c4b5fd);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+.seg button.active{box-shadow:0 6px 18px rgba(99,102,241,.45)}
+.term{box-shadow:0 24px 60px rgba(0,0,0,.45),0 0 0 1px rgba(139,92,246,.08)}
+.term-head::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:#f87171;box-shadow:16px 0 0 #fbbf24,32px 0 0 #34d399;margin-right:50px}
+.log:hover{background:rgba(139,92,246,.08)}
+
+/* ===== DONASI ===== */
+.gold{--gold:#f0b90b}
+.donate{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;align-items:start}
+.d-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px;backdrop-filter:blur(14px);position:relative;overflow:hidden}
+.d-card::before{content:'';position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(240,185,11,.22),transparent 65%)}
+.d-heart{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;font-size:24px;color:#fff;background:linear-gradient(135deg,#ec4899,#8b5cf6);box-shadow:0 10px 30px rgba(236,72,153,.4);margin-bottom:18px;animation:floaty 4s ease-in-out infinite}
+.d-card h2{font-size:clamp(20px,3vw,26px);font-weight:800;margin-bottom:8px}
+.d-card p{color:var(--dim);font-size:14px;line-height:1.65}
+.d-label{display:flex;align-items:center;gap:8px;margin:24px 0 10px;font-size:12px;font-weight:700;color:#f0b90b}
+.d-id{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;background:rgba(5,6,22,.6);border:1px solid rgba(240,185,11,.35);box-shadow:0 0 30px rgba(240,185,11,.08)}
+.d-id code{font-family:'JetBrains Mono',monospace;font-size:clamp(20px,5vw,28px);font-weight:700;letter-spacing:2px;background:linear-gradient(90deg,#fde68a,#f0b90b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.btn.gold{background:linear-gradient(135deg,#f0b90b,#f59e0b);color:#1a1300;border:0;box-shadow:0 8px 24px rgba(240,185,11,.35)}
+.btn.gold:hover{background:linear-gradient(135deg,#fcd34d,#f0b90b);box-shadow:0 10px 30px rgba(240,185,11,.55)}
+.steps{list-style:none;counter-reset:st;display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.steps li{counter-increment:st;display:flex;gap:14px;align-items:flex-start;font-size:13.5px;line-height:1.5}
+.steps li::before{content:counter(st);flex-shrink:0;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--grad)}
+.d-note{margin-top:20px;padding:12px 14px;border-radius:12px;font-size:12.5px;color:var(--warn);background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);line-height:1.5}
+.heart-btn{width:42px;height:42px;border-radius:12px;border:1px solid rgba(236,72,153,.4);background:rgba(236,72,153,.12);color:#f472b6;cursor:pointer;display:grid;place-items:center;font-size:16px;transition:var(--ease);flex-shrink:0}
+.heart-btn:hover{background:rgba(236,72,153,.25);transform:translateY(-2px) scale(1.05)}
+.heart-btn i{animation:beat 1.6s infinite}
+@keyframes beat{0%,60%,100%{transform:scale(1)}20%{transform:scale(1.25)}40%{transform:scale(1.05)}}
+@media(max-width:820px){.donate{grid-template-columns:1fr}.d-card{padding:22px}}
+
+/* ===== BAHASA / RTL ===== */
+.lang{height:42px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;outline:none;max-width:118px;flex-shrink:0;transition:var(--ease)}
+.lang:hover,.lang:focus{border-color:var(--violet)}
+.lang option{background:#0d1030;color:#fff}
+.term-body,.term-head,.d-id code,.uid,.prog-bot,.metric strong,.time{direction:ltr}
+.term-body,.term-head{text-align:left}
+[dir=rtl] .sidebar{left:auto;right:0;transform:translateX(102%);border-right:0;border-left:1px solid var(--line);box-shadow:-20px 0 60px rgba(0,0,0,.5)}
+[dir=rtl] body.menu-open .sidebar{transform:none}
+[dir=rtl] .nav-item{text-align:right}
+[dir=rtl] .nav-item:hover{transform:translateX(-4px)}
+[dir=rtl] .nav-item.active::before{left:auto;right:-18px;border-radius:4px 0 0 4px}
+[dir=rtl] .node::before{left:auto;right:0}
+[dir=rtl] .search i{left:auto;right:15px}
+[dir=rtl] .search input{padding:12px 40px 12px 14px}
+[dir=rtl] .info-row b{text-align:left}
+[dir=rtl] .d-card::before{right:auto;left:-60px}
+[dir=rtl] .toasts{align-items:flex-start}
+@media(max-width:600px){.lang{max-width:84px;padding:0 6px;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="bg"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
+
+<header class="topbar">
+  <button class="menu-btn" id="menuBtn" aria-label="Buka menu" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+  <div class="top-title"><span id="topTitle">Command Core</span><small>CGU TEAM</small></div>
+  <div class="pill" id="pill"><i class="dot"></i><span id="side-status">ONLINE</span></div>
+  <select class="lang" id="lang" aria-label="Language"><option value="id">Indonesia</option><option value="ar">العربية</option><option value="ne">नेपाली</option><option value="en">English</option><option value="hi">हिन्दी</option></select>
+  <button class="heart-btn" onclick="document.querySelector('[data-page=donate]').click()" aria-label="Donasi" title="Donasi"><i class="fa-solid fa-heart"></i></button>
+</header>
+
+<div class="overlay" id="overlay"></div>
+<nav class="sidebar" id="sidebar" aria-label="Menu utama">
+  <div class="brand">
+    <div class="brand-icon"><i class="fa-solid fa-skull"></i></div>
+    <div><div class="brand-name">CGU TEAM</div><div class="brand-sub">Real-Time Command Center</div></div>
+  </div>
+  <div class="nav">
+    <button class="nav-item active" data-page="core" data-title="Command Core"><i class="fa-solid fa-gauge-high"></i>Command Core</button>
+    <button class="nav-item" data-page="targets" data-title="Target Nodes"><i class="fa-solid fa-network-wired"></i>Target Nodes</button>
+    <button class="nav-item" data-page="terminal" data-title="Uplink Terminal"><i class="fa-solid fa-terminal"></i>Uplink Terminal</button>
+    <button class="nav-item" data-page="profile" data-title="Profil CGU TEAM"><i class="fa-solid fa-id-badge"></i>Profil CGU TEAM</button>
+    <button class="nav-item" data-page="donate" data-title="Donasi"><i class="fa-solid fa-heart"></i>Donasi</button>
+  </div>
+  <div class="side-foot">Status mesin<b id="side-status-2">ONLINE</b></div>
+</nav>
+
+<main class="main">
+  <section id="page-core" class="page active">
+    <div class="page-head">
+      <div><h1 class="page-title">Command Core</h1><p class="page-sub">Analitik sistem secara real-time</p></div>
+      <button class="btn primary" onclick="fetchStats()"><i class="fa-solid fa-rotate"></i>Sinkronkan</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-icon"><i class="fa-solid fa-diagram-project"></i></div><div class="stat-val" id="stat-accounts">0</div><div class="stat-label">Total node terhubung</div><div class="stat-foot" id="stat-online">0 Online</div></div>
+      <div class="stat"><div class="stat-icon"><i class="fa-solid fa-bolt"></i></div><div class="stat-val" id="stat-started">0</div><div class="stat-label">Eksekusi dimulai</div><div class="stat-foot" id="stat-per-hour">~0 / jam</div></div>
+      <div class="stat"><div class="stat-icon"><i class="fa-solid fa-fire-flame-curved"></i></div><div class="stat-val" id="stat-exp">+0</div><div class="stat-label">Total EXP terkumpul</div><div class="stat-foot" id="stat-exp-rate">~0 EXP/jam</div></div>
+      <div class="stat"><div class="stat-icon"><i class="fa-solid fa-clock"></i></div><div class="stat-val" id="stat-uptime">00:00:00</div><div class="stat-label">Uptime sistem</div><div class="stat-foot" id="stat-active-matches">0 Active</div></div>
+    </div>
+  </section>
+
+  <section id="page-targets" class="page">
+    <div class="page-head">
+      <div><h1 class="page-title">Target Nodes</h1><p class="page-sub">Kelola akun yang terhubung</p></div>
+      <div class="row">
+        <button class="btn" id="btn-pause-all" onclick="togglePauseAll()"><i class="fa-solid fa-pause"></i> Pause All</button>
+        <button class="btn primary" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> Inject Node</button>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="account-search" type="text" placeholder="Cari UID atau nickname..." oninput="filterAccounts()"></div>
+      <div class="seg" id="node-filters">
+        <button class="active" onclick="setFilter('all',this)">Semua</button>
+        <button onclick="setFilter('in_match',this)">Match</button>
+        <button onclick="setFilter('online',this)">Online</button>
+        <button onclick="setFilter('paused',this)">Paused</button>
+      </div>
+    </div>
+    <div class="grid" id="accounts-container">
+      <div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i>Menghubungkan ke backend...</div>
+    </div>
+  </section>
+
+  <section id="page-terminal" class="page">
+    <div class="page-head">
+      <div><h1 class="page-title">Uplink Terminal</h1><p class="page-sub">Log eksekusi backend langsung</p></div>
+      <div class="row">
+        <button class="btn" id="btn-autoscroll" onclick="toggleAutoScroll()"><i class="fa-solid fa-arrow-down"></i> Auto-scroll</button>
+        <button class="btn primary" onclick="clearLogs()"><i class="fa-solid fa-trash"></i> Hapus log</button>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="log-filters">
+        <button class="active" onclick="setLogFilter('all',this)">Semua</button>
+        <button onclick="setLogFilter('match',this)">Match</button>
+        <button onclick="setLogFilter('success',this)">EXP / Sukses</button>
+        <button onclick="setLogFilter('error',this)">Error</button>
+      </div>
+    </div>
+    <div class="term">
+      <div class="term-head">CGU_TEAM@backend:~#</div>
+      <div class="term-body" id="console-stream" onscroll="handleLogScroll()"></div>
+    </div>
+  </section>
+
+  <section id="page-profile" class="page">
+    <div class="page-head">
+      <div><h1 class="page-title">Profil Tim</h1><p class="page-sub">Identitas dan ringkasan operasional</p></div>
+    </div>
+    <div class="hero">
+      <div class="hero-banner"></div>
+      <div class="hero-body">
+        <div class="hero-avatar">CGU</div>
+        <div>
+          <div class="hero-name">CGU TEAM</div>
+          <div class="hero-tag">Real-Time Command Center</div>
+        </div>
+        <div class="chips">
+          <span class="chip"><i class="fa-solid fa-shield-halved"></i>Admin</span>
+          <span class="chip"><i class="fa-solid fa-circle-check"></i><span id="p-status">Online</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-icon"><i class="fa-solid fa-diagram-project"></i></div><div class="stat-val" id="p-nodes">0</div><div class="stat-label">Node dikelola</div></div>
+      <div class="stat"><div class="stat-icon"><i class="fa-solid fa-bolt"></i></div><div class="stat-val" id="p-matches">0</div><div class="stat-label">Eksekusi dimulai</div></div>
+      <div class="stat"><div class="stat-icon"><i class="fa-solid fa-fire-flame-curved"></i></div><div class="stat-val" id="p-exp">+0</div><div class="stat-label">Total EXP terkumpul</div></div>
+      <div class="stat"><div class="stat-icon"><i class="fa-solid fa-gauge-high"></i></div><div class="stat-val" id="p-rate">0</div><div class="stat-label">EXP per jam</div></div>
+    </div>
+    <div class="info">
+      <div class="info-row"><span>Nama tim</span><b>CGU TEAM</b></div>
+      <div class="info-row"><span>Dashboard</span><b>Command Center</b></div>
+      <div class="info-row"><span>Peran</span><b>Administrator</b></div>
+      <div class="info-row"><span>Uptime sesi</span><b id="p-uptime">00:00:00</b></div>
+    </div>
+  </section>
+
+  <section id="page-donate" class="page">
+    <div class="page-head">
+      <div><h1 class="page-title">Donasi</h1><p class="page-sub">Dukung pengembangan CGU TEAM</p></div>
+    </div>
+    <div class="donate">
+      <div class="d-card">
+        <div class="d-heart"><i class="fa-solid fa-heart"></i></div>
+        <h2>Terima kasih sudah mendukung</h2>
+        <p>Donasi kamu membantu menjaga server tetap menyala dan mendorong pengembangan fitur baru. Berapa pun jumlahnya sangat berarti.</p>
+        <div class="d-label"><i class="fa-solid fa-circle-dollar-to-slot"></i>BINANCE PAY ID</div>
+        <div class="d-id">
+          <code id="binance-id">1282491012</code>
+          <button class="btn gold" onclick="copyText('1282491012','Binance ID')"><i class="fa-regular fa-copy"></i>Salin</button>
+        </div>
+      </div>
+      <div class="d-card">
+        <h2 style="font-size:18px;margin-bottom:18px">Cara donasi</h2>
+        <ol class="steps">
+          <li><span data-i="s1">Buka aplikasi <b>Binance</b> lalu pilih <b>Pay</b></span></li>
+          <li><span data-i="s2">Pilih <b>Send</b> dan masukkan Binance ID di samping</span></li>
+          <li><span data-i="s3">Isi jumlah donasi, lalu konfirmasi pembayaran</span></li>
+        </ol>
+        <div class="d-note"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i="note">Periksa kembali ID sebelum mengirim. Transaksi kripto tidak bisa dibatalkan.</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="addModal">
+  <div class="card">
+    <h2>Inject node baru</h2>
+    <p>Masukkan kredensial untuk menjalankan instance baru di server.</p>
+    <form onsubmit="submitAddAccount(event)">
+      <div class="field"><label>Tipe autentikasi</label>
+        <select id="acc-type" onchange="toggleFormType()">
+          <option value="guest">Guest (UID / Password)</option>
+          <option value="token">Access Token</option>
+        </select></div>
+      <div id="guest-inputs">
+        <div class="field"><label>UID</label><input type="text" id="acc-uid" placeholder="Masukkan UID" autocomplete="off"></div>
+        <div class="field"><label>Password / Key</label><input type="password" id="acc-password" placeholder="••••••••••••" autocomplete="off"></div>
+      </div>
+      <div id="token-inputs" style="display:none"><div class="field"><label>Access token</label><textarea id="acc-token" placeholder="Tempel token lengkap di sini..."></textarea></div></div>
+      <div class="card-actions">
+        <button type="button" class="btn" onclick="closeAddModal()">Batal</button>
+        <button type="submit" class="btn primary"><i class="fa-solid fa-rocket"></i> Deploy node</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toasts" id="toastBox"></div>
+
+<script>
+const EXP_TABLE = {
+1:0,2:48,3:202,4:544,5:1012,6:1844,7:2792,8:3800,9:4870,10:6004,
+11:7192,12:8448,13:9760,14:11140,15:12566,16:14060,17:15610,18:17224,19:18902,20:20632,
+21:22424,22:24278,23:26192,24:28166,25:30200,26:32294,27:34448,28:37804,29:41274,30:44870,
+31:48582,32:53394,33:58566,34:64096,35:69994,36:76460,37:83506,38:91128,39:99322,40:108092,
+41:120144,42:133266,43:147472,44:162760,45:179126,46:196572,47:215368,48:235516,49:257010,50:279860,
+51:304056,52:348318,53:394982,54:444044,55:495508,56:549364,57:633756,58:721744,59:813336,60:908522,
+61:1041438,62:1180352,63:1325266,64:1476184,65:1634300,66:1840946,67:2056594,68:2281242,69:2514880,70:2757530,
+71:3059506,72:3372284,73:3699456,74:4041030,75:4397002,76:4829104,77:5282204,78:5756304,79:6251408,80:6776502,
+81:7381324,82:8043154,83:8752982,84:9510808,85:10316338,86:11277190,87:12291748,88:13360304,89:14482858,90:15659418,
+91:17026708,92:18453950,93:19941280,94:21488570,95:23095858,96:24763138,97:26490428,98:28378704,99:30124996,100:32032884
+};
+let cachedLogs = [], activeFilter = "all", activeLogFilter = "all", autoScroll = true, clientStart = Date.now();
+
+
+/* ---------- BAHASA (i18n) ---------- */
+const LG=["en","ar","ne","hi"], D={id:{},en:{},ar:{},ne:{},hi:{}};
+const T=[
+["Real-Time Command Center","Real-Time Command Center","مركز القيادة المباشر","रियल-टाइम कमान्ड सेन्टर","रियल-टाइम कमांड सेंटर"],
+["Command Core","Command Core","مركز التحكم","कमान्ड कोर","कमांड कोर"],
+["Target Nodes","Target Nodes","العقد المستهدفة","टार्गेट नोडहरू","टारगेट नोड्स"],
+["Uplink Terminal","Uplink Terminal","طرفية الاتصال","अपलिङ्क टर्मिनल","अपलिंक टर्मिनल"],
+["Profil CGU TEAM","CGU TEAM Profile","ملف CGU TEAM","CGU TEAM प्रोफाइल","CGU TEAM प्रोफ़ाइल"],
+["Donasi","Donate","تبرّع","दान","दान करें"],
+["Status mesin","Engine status","حالة المحرك","इन्जिन स्थिति","इंजन स्थिति"],
+["Analitik sistem secara real-time","Real-time system analytics","تحليلات النظام المباشرة","रियल-टाइम प्रणाली विश्लेषण","रियल-टाइम सिस्टम एनालिटिक्स"],
+["Sinkronkan","Sync","مزامنة","सिंक गर्नुहोस्","सिंक करें"],
+["Total node terhubung","Total linked nodes","إجمالي العقد المتصلة","जोडिएका कुल नोडहरू","कुल जुड़े नोड्स"],
+["Eksekusi dimulai","Executions started","عمليات التنفيذ المبدوءة","सुरु गरिएका कार्यान्वयन","शुरू किए गए निष्पादन"],
+["Total EXP terkumpul","Total EXP harvested","إجمالي EXP المجمّع","जम्मा गरिएको कुल EXP","कुल एकत्रित EXP"],
+["Uptime sistem","System uptime","مدة تشغيل النظام","प्रणाली अपटाइम","सिस्टम अपटाइम"],
+["Kelola akun yang terhubung","Manage connected accounts","إدارة الحسابات المتصلة","जोडिएका खाताहरू व्यवस्थापन गर्नुहोस्","जुड़े हुए खातों को प्रबंधित करें"],
+["Pause All","Pause All","إيقاف الكل مؤقتًا","सबै रोक्नुहोस्","सभी रोकें"],
+["Resume All","Resume All","استئناف الكل","सबै सुचारु गर्नुहोस्","सभी फिर शुरू करें"],
+["Inject Node","Inject Node","إضافة عقدة","नोड थप्नुहोस्","नोड जोड़ें"],
+["Semua","All","الكل","सबै","सभी"],
+["Match","Match","مباراة","म्याच","मैच"],
+["Online","Online","متصل","अनलाइन","ऑनलाइन"],
+["Paused","Paused","متوقف مؤقتًا","रोकिएको","रुका हुआ"],
+["Menghubungkan ke backend...","Connecting to backend...","جارٍ الاتصال بالخادم...","ब्याकएन्डमा जडान हुँदैछ...","बैकएंड से कनेक्ट हो रहा है..."],
+["Log eksekusi backend langsung","Live backend execution logs","سجلات تنفيذ الخادم المباشرة","ब्याकएन्ड कार्यान्वयन लाइभ लग","बैकएंड निष्पादन लॉग लाइव"],
+["Auto-scroll","Auto-scroll","تمرير تلقائي","अटो-स्क्रोल","ऑटो-स्क्रॉल"],
+["Hapus log","Clear logs","مسح السجلات","लग मेटाउनुहोस्","लॉग साफ़ करें"],
+["EXP / Sukses","EXP / Success","EXP / نجاح","EXP / सफल","EXP / सफल"],
+["Error","Error","أخطاء","त्रुटि","त्रुटि"],
+["Profil Tim","Team Profile","ملف الفريق","टोली प्रोफाइल","टीम प्रोफ़ाइल"],
+["Identitas dan ringkasan operasional","Identity and operational summary","الهوية وملخص العمليات","पहिचान र सञ्चालन सारांश","पहचान और संचालन सारांश"],
+["Admin","Admin","مشرف","एडमिन","एडमिन"],
+["Node dikelola","Nodes managed","العقد المُدارة","व्यवस्थापित नोडहरू","प्रबंधित नोड्स"],
+["EXP per jam","EXP per hour","EXP في الساعة","प्रति घण्टा EXP","प्रति घंटा EXP"],
+["Nama tim","Team name","اسم الفريق","टोलीको नाम","टीम का नाम"],
+["Dashboard","Dashboard","لوحة التحكم","ड्यासबोर्ड","डैशबोर्ड"],
+["Peran","Role","الدور","भूमिका","भूमिका"],
+["Uptime sesi","Session uptime","مدة الجلسة","सत्र अपटाइम","सत्र अपटाइम"],
+["Command Center","Command Center","مركز القيادة","कमान्ड सेन्टर","कमांड सेंटर"],
+["Administrator","Administrator","مسؤول","प्रशासक","प्रशासक"],
+["Dukung pengembangan CGU TEAM","Support CGU TEAM development","ادعم تطوير CGU TEAM","CGU TEAM को विकासमा सहयोग गर्नुहोस्","CGU TEAM के विकास में सहयोग करें"],
+["Terima kasih sudah mendukung","Thank you for your support","شكرًا لدعمك","सहयोगका लागि धन्यवाद","सहयोग के लिए धन्यवाद"],
+["Donasi kamu membantu menjaga server tetap menyala dan mendorong pengembangan fitur baru. Berapa pun jumlahnya sangat berarti.","Your donation helps keep the servers running and drives new feature development. Every amount means a lot.","تبرعك يساعد في إبقاء الخوادم تعمل ويدعم تطوير ميزات جديدة. كل مبلغ له قيمة كبيرة.","तपाईंको दानले सर्भर चलिरहन र नयाँ सुविधाहरू विकास गर्न मद्दत गर्छ। जतिसुकै रकम पनि अत्यन्त महत्त्वपूर्ण छ।","आपके दान से सर्वर चालू रहते हैं और नई सुविधाओं का विकास होता है। हर राशि बहुत मायने रखती है।"],
+["Salin","Copy","نسخ","प्रतिलिपि","कॉपी करें"],
+["Cara donasi","How to donate","طريقة التبرع","दान गर्ने तरिका","दान कैसे करें"],
+["Inject node baru","Inject new node","إضافة عقدة جديدة","नयाँ नोड थप्नुहोस्","नया नोड जोड़ें"],
+["Masukkan kredensial untuk menjalankan instance baru di server.","Enter credentials to run a new instance on the server.","أدخل بيانات الاعتماد لتشغيل نسخة جديدة على الخادم.","सर्भरमा नयाँ इन्स्ट्यान्स चलाउन क्रेडेन्सियल प्रविष्ट गर्नुहोस्।","सर्वर पर नया इंस्टेंस चलाने के लिए क्रेडेंशियल दर्ज करें।"],
+["Tipe autentikasi","Authentication type","نوع المصادقة","प्रमाणीकरण प्रकार","प्रमाणीकरण प्रकार"],
+["Guest (UID / Password)","Guest (UID / Password)","ضيف (UID / كلمة المرور)","गेस्ट (UID / पासवर्ड)","गेस्ट (UID / पासवर्ड)"],
+["Access Token","Access Token","رمز الوصول","एक्सेस टोकन","एक्सेस टोकन"],
+["Password / Key","Password / Key","كلمة المرور / المفتاح","पासवर्ड / की","पासवर्ड / की"],
+["Access token","Access token","رمز الوصول","एक्सेस टोकन","एक्सेस टोकन"],
+["Batal","Cancel","إلغاء","रद्द गर्नुहोस्","रद्द करें"],
+["Deploy node","Deploy node","تشغيل العقدة","नोड डिप्लोय गर्नुहोस्","नोड डिप्लॉय करें"],
+["Cari UID atau nickname...","Search UID or nickname...","ابحث عن UID أو الاسم...","UID वा उपनाम खोज्नुहोस्...","UID या निकनेम खोजें..."],
+["Masukkan UID","Enter UID","أدخل UID","UID प्रविष्ट गर्नुहोस्","UID दर्ज करें"],
+["Tempel token lengkap di sini...","Paste the full token here...","الصق الرمز كاملًا هنا...","पूरा टोकन यहाँ टाँस्नुहोस्...","पूरा टोकन यहाँ पेस्ट करें..."],
+["ONLINE","ONLINE","متصل","अनलाइन","ऑनलाइन"],
+["OFFLINE","OFFLINE","غير متصل","अफलाइन","ऑफ़लाइन"],
+["Offline","Offline","غير متصل","अफलाइन","ऑफ़लाइन"],
+["PAUSED","PAUSED","متوقف","रोकिएको","रुका हुआ"],
+["IN MATCH","IN MATCH","في مباراة","म्याचमा","मैच में"],
+["SEARCHING","SEARCHING","جارٍ البحث","खोजिँदैछ","खोज रहा है"],
+["Base EXP","Base EXP","EXP الأساسي","आधार EXP","बेस EXP"],
+["Current","Current","الحالي","हालको","वर्तमान"],
+["Harvested","Harvested","المجمّع","संकलित","एकत्रित"],
+["{0} EXP lagi","{0} EXP left","متبقي {0} EXP","{0} EXP बाँकी","{0} EXP शेष"],
+["Salin UID","Copy UID","نسخ UID","UID कपी गर्नुहोस्","UID कॉपी करें"],
+["Resume","Resume","استئناف","सुचारु गर्नुहोस्","फिर शुरू करें"],
+["Pause","Pause","إيقاف مؤقت","रोक्नुहोस्","रोकें"],
+["Restart","Restart","إعادة التشغيل","पुनः सुरु गर्नुहोस्","पुनः आरंभ करें"],
+["Sync","Sync","مزامنة","सिंक","सिंक"],
+["Hapus","Delete","حذف","मेटाउनुहोस्","हटाएं"],
+["UID dan password wajib diisi","UID and password are required","UID وكلمة المرور مطلوبان","UID र पासवर्ड आवश्यक छ","UID और पासवर्ड आवश्यक हैं"],
+["Token wajib diisi","Token is required","الرمز مطلوب","टोकन आवश्यक छ","टोकन आवश्यक है"],
+["Node berhasil di-deploy","Node deployed successfully","تم تشغيل العقدة بنجاح","नोड सफलतापूर्वक डिप्लोय भयो","नोड सफलतापूर्वक डिप्लॉय हुआ"],
+["Gagal deploy node","Failed to deploy node","فشل تشغيل العقدة","नोड डिप्लोय गर्न असफल","नोड डिप्लॉय करने में विफल"],
+["Koneksi ke backend gagal","Backend connection failed","فشل الاتصال بالخادم","ब्याकएन्ड जडान असफल","बैकएंड कनेक्शन विफल"],
+["Hapus node {0}? Tindakan ini tidak bisa dibatalkan.","Delete node {0}? This cannot be undone.","حذف العقدة {0}؟ لا يمكن التراجع عن هذا الإجراء.","नोड {0} मेटाउने? यो कार्य पूर्ववत गर्न सकिँदैन।","नोड {0} हटाएं? यह क्रिया पूर्ववत नहीं की जा सकती।"],
+["Node {0} dihapus","Node {0} deleted","تم حذف العقدة {0}","नोड {0} मेटाइयो","नोड {0} हटा दिया गया"],
+["Gagal menghapus","Failed to delete","فشل الحذف","मेटाउन असफल","हटाने में विफल"],
+["Sinkronisasi {0}...","Syncing {0}...","جارٍ مزامنة {0}...","{0} सिंक हुँदैछ...","{0} सिंक हो रहा है..."],
+["Sinkronisasi gagal","Sync failed","فشلت المزامنة","सिंक असफल","सिंक विफल"],
+["Restart proses {0}...","Restarting process {0}...","جارٍ إعادة تشغيل {0}...","{0} प्रक्रिया पुनः सुरु हुँदैछ...","{0} प्रक्रिया पुनः आरंभ हो रही है..."],
+["Restart gagal","Restart failed","فشلت إعادة التشغيل","पुनः सुरु असफल","पुनः आरंभ विफल"],
+["{0} dijeda","{0} paused","تم إيقاف {0} مؤقتًا","{0} रोकियो","{0} रोका गया"],
+["{0} dilanjutkan","{0} resumed","تم استئناف {0}","{0} सुचारु भयो","{0} फिर शुरू हुआ"],
+["Aksi gagal","Action failed","فشل الإجراء","कार्य असफल","क्रिया विफल"],
+["Semua node dijeda","All nodes paused","تم إيقاف كل العقد مؤقتًا","सबै नोड रोकिए","सभी नोड रोके गए"],
+["Semua node berjalan","All nodes running","كل العقد تعمل","सबै नोड चलिरहेका छन्","सभी नोड चल रहे हैं"],
+["Gagal","Failed","فشل","असफल","विफल"],
+["Belum ada node aktif.","No active nodes yet.","لا توجد عقد نشطة بعد.","अहिलेसम्म कुनै सक्रिय नोड छैन।","अभी कोई सक्रिय नोड नहीं है।"],
+["Inject node pertama","Inject your first node","أضف أول عقدة","पहिलो नोड थप्नुहोस्","पहला नोड जोड़ें"],
+["Log server dibersihkan","Server logs cleared","تم مسح سجلات الخادم","सर्भर लग मेटाइयो","सर्वर लॉग साफ़ किए गए"],
+["Gagal menghapus log di backend","Failed to clear logs on backend","فشل مسح السجلات على الخادم","ब्याकएन्डमा लग मेटाउन असफल","बैकएंड पर लॉग साफ़ करने में विफल"],
+["{0} disalin: {1}","{0} copied: {1}","تم نسخ {0}: {1}","{0} कपी गरियो: {1}","{0} कॉपी किया गया: {1}"],
+["{0} Node terhubung","{0} nodes connected","{0} عقدة متصلة","{0} नोड जोडिएका","{0} नोड जुड़े"],
+["~{0} / jam","~{0} / hour","~{0} / ساعة","~{0} / घण्टा","~{0} / घंटा"],
+["~{0} EXP/jam","~{0} EXP/hr","~{0} EXP/ساعة","~{0} EXP/घण्टा","~{0} EXP/घंटा"],
+["{0} Aktif","{0} Active","{0} نشط","{0} सक्रिय","{0} सक्रिय"],
+["s1","Open the <b>Binance</b> app and choose <b>Pay</b>","افتح تطبيق <b>Binance</b> واختر <b>Pay</b>","<b>Binance</b> एप खोल्नुहोस् र <b>Pay</b> छान्नुहोस्","<b>Binance</b> ऐप खोलें और <b>Pay</b> चुनें"],
+["s2","Choose <b>Send</b> and enter the Binance ID shown beside","اختر <b>Send</b> وأدخل معرّف Binance الظاهر بجانبه","<b>Send</b> छान्नुहोस् र छेउमा देखाइएको Binance ID हाल्नुहोस्","<b>Send</b> चुनें और बगल में दिखाया गया Binance ID दर्ज करें"],
+["s3","Enter the donation amount, then confirm the payment","أدخل مبلغ التبرع ثم أكّد الدفع","दान रकम राख्नुहोस्, त्यसपछि भुक्तानी पुष्टि गर्नुहोस्","दान की राशि दर्ज करें, फिर भुगतान की पुष्टि करें"],
+["note","Double-check the ID before sending. Crypto transactions cannot be reversed.","تحقق من المعرّف جيدًا قبل الإرسال. لا يمكن التراجع عن معاملات العملات الرقمية.","पठाउनु अघि ID दोहोर्‍याएर जाँच गर्नुहोस्। क्रिप्टो लेनदेन फिर्ता गर्न सकिँदैन।","भेजने से पहले ID दोबारा जांच लें। क्रिप्टो लेनदेन वापस नहीं किए जा सकते।"]
+];
+T.forEach(r => LG.forEach((l,i) => D[l][r[0]] = r[i+1]));
+const ID_HTML = {
+  s1:"Buka aplikasi <b>Binance</b> lalu pilih <b>Pay</b>",
+  s2:"Pilih <b>Send</b> dan masukkan Binance ID di samping",
+  s3:"Isi jumlah donasi, lalu konfirmasi pembayaran",
+  note:"Periksa kembali ID sebelum mengirim. Transaksi kripto tidak bisa dibatalkan."
+};
+const PH = {"account-search":"Cari UID atau nickname...","acc-uid":"Masukkan UID","acc-token":"Tempel token lengkap di sini..."};
+let lang = "id";
+function t(key, ...a){
+  let s = lang === "id" ? (ID_HTML[key] ?? key) : ((D[lang] && D[lang][key]) ?? key);
+  return s.replace(/\{(\d)\}/g, (m,i) => a[i] ?? m);
+}
+function walkText(root){
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode: n =>
+    n.parentElement && n.parentElement.closest("#console-stream,#toastBox,script,style") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT});
+  let n;
+  while((n = w.nextNode())){
+    const raw = n.nodeValue, key = n._k || raw.trim();
+    if(!key || (!n._k && !(key in D.en))) continue;
+    n._k = key;
+    const tr = t(key), cur = raw.trim();
+    n.nodeValue = raw.replace(cur, () => tr);
+  }
+}
+function applyLang(l, refetch = true){
+  if(!D[l] && l !== "id") l = "id";
+  lang = l;
+  try{ localStorage.setItem("lang", l); }catch(e){}
+  document.documentElement.lang = l;
+  document.documentElement.dir = l === "ar" ? "rtl" : "ltr";
+  document.getElementById("lang").value = l;
+  walkText(document.body);
+  document.querySelectorAll("[data-i]").forEach(el => { el.innerHTML = t(el.dataset.i); });
+  for(const id in PH){ const el = document.getElementById(id); if(el) el.placeholder = t(PH[id]); }
+  const act = document.querySelector(".nav-item.active");
+  if(act) document.getElementById("topTitle").textContent = t(act.dataset.title);
+  setStatus(lastOn);
+  if(refetch) fetchStats();
+}
+document.getElementById("lang").addEventListener("change", e => applyLang(e.target.value));
+
+/* ---------- SIDEBAR: buka lewat tombol, tutup dengan klik di mana saja ---------- */
+const menuBtn = document.getElementById("menuBtn");
+function setMenu(open){
+  document.body.classList.toggle("menu-open", open);
+  menuBtn.setAttribute("aria-expanded", open);
+}
+menuBtn.addEventListener("click", e => { e.stopPropagation(); setMenu(!document.body.classList.contains("menu-open")); });
+document.addEventListener("click", () => { if(document.body.classList.contains("menu-open")) setMenu(false); });
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ setMenu(false); closeAddModal(); } });
+document.getElementById("addModal").addEventListener("click", e => { if(e.target.id === "addModal") closeAddModal(); });
+
+document.querySelectorAll(".nav-item").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById("page-" + btn.dataset.page).classList.add("active");
+  document.getElementById("topTitle").textContent = t(btn.dataset.title);
+}));
+
+/* ---------- UI helpers ---------- */
+function toast(message, type = "info"){
+  message = t(message);
+  const box = document.getElementById("toastBox"), el = document.createElement("div");
+  el.className = "toast " + type;
+  const ic = type === "success" ? '<i class="fa-solid fa-check" style="color:var(--ok)"></i>'
+           : type === "error" ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--err)"></i>'
+           : '<i class="fa-solid fa-circle-info" style="color:var(--violet)"></i>';
+  el.innerHTML = `${ic}<span>${esc(message)}</span>`;
+  box.appendChild(el);
+  setTimeout(() => { el.classList.add("hide"); setTimeout(() => el.remove(), 400); }, 4000);
+}
+function openAddModal(){ document.getElementById("addModal").classList.add("active"); }
+function closeAddModal(){ document.getElementById("addModal").classList.remove("active"); }
+function toggleFormType(){
+  const t = document.getElementById("acc-type").value;
+  document.getElementById("guest-inputs").style.display = t === "guest" ? "block" : "none";
+  document.getElementById("token-inputs").style.display = t === "token" ? "block" : "none";
+}
+
+/* ---------- API actions ---------- */
+async function post(url, body){
+  const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body: body ? JSON.stringify(body) : undefined});
+  return r.json();
+}
+async function submitAddAccount(e){
+  e.preventDefault();
+  const type = document.getElementById("acc-type").value;
+  let payload;
+  if(type === "guest"){
+    const uid = document.getElementById("acc-uid").value.trim(), pass = document.getElementById("acc-password").value.trim();
+    if(!uid || !pass){ toast("UID dan password wajib diisi", "error"); return; }
+    payload = {uid, password: pass};
+  } else {
+    const token = document.getElementById("acc-token").value.trim();
+    if(!token){ toast("Token wajib diisi", "error"); return; }
+    payload = {token};
+  }
+  try{
+    const d = await post("/api/account/add", payload);
+    if(d.status === "ok"){ closeAddModal(); toast("Node berhasil di-deploy", "success"); fetchStats(); }
+    else toast(d.error || "Gagal deploy node", "error");
+  }catch(err){ toast("Koneksi ke backend gagal", "error"); }
+}
+async function deleteAccount(uid, authUid = ""){
+  if(!confirm(t("Hapus node {0}? Tindakan ini tidak bisa dibatalkan.", uid))) return;
+  try{
+    const d = await post("/api/account/delete", {uid, auth_uid: authUid});
+    if(d.status === "ok"){ toast(t("Node {0} dihapus", uid), "success"); const c = document.getElementById("acc-" + uid); if(c) c.remove(); fetchStats(); }
+    else toast(d.error || "Gagal menghapus", "error");
+  }catch(e){ toast("Koneksi ke backend gagal", "error"); }
+}
+async function refreshAcc(uid){
+  try{ toast(t("Sinkronisasi {0}...", uid)); await post("/api/account/refresh", {uid}); setTimeout(fetchStats, 800); }
+  catch(e){ toast("Sinkronisasi gagal", "error"); }
+}
+async function restartAcc(uid){
+  try{ toast(t("Restart proses {0}...", uid)); await post("/api/account/restart", {uid}); setTimeout(fetchStats, 800); }
+  catch(e){ toast("Restart gagal", "error"); }
+}
+async function togglePause(uid){
+  try{
+    const d = await post("/api/account/pause", {uid});
+    if(d.status === "ok"){ toast(t(d.is_paused ? "{0} dijeda" : "{0} dilanjutkan", uid), d.is_paused ? "info" : "success"); fetchStats(); }
+    else toast(d.error || "Aksi gagal", "error");
+  }catch(e){ toast("Koneksi ke backend gagal", "error"); }
+}
+async function togglePauseAll(){
+  try{
+    const d = await post("/api/account/pause_all");
+    if(d.status === "ok"){ toast(d.all_paused ? "Semua node dijeda" : "Semua node berjalan", d.all_paused ? "info" : "success"); fetchStats(); }
+    else toast(d.error || "Gagal", "error");
+  }catch(e){ toast("Koneksi ke backend gagal", "error"); }
+}
+
+/* ---------- Nodes ---------- */
+function setFilter(f, btn){
+  activeFilter = f;
+  document.querySelectorAll("#node-filters button").forEach(x => x.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+  filterAccounts();
+}
+function filterAccounts(){
+  const q = (document.getElementById("account-search").value || "").toLowerCase().trim();
+  document.querySelectorAll(".node").forEach(card => {
+    const uid = (card.dataset.uid || "").toLowerCase(), nick = (card.dataset.nick || "").toLowerCase();
+    const st = (card.dataset.status || "").toLowerCase(), paused = card.dataset.paused === "1";
+    let ok = !q || uid.includes(q) || nick.includes(q);
+    if(activeFilter === "in_match") ok = ok && st.includes("match") && !paused;
+    else if(activeFilter === "online") ok = ok && (st.includes("online") || st.includes("match")) && !paused;
+    else if(activeFilter === "paused") ok = ok && paused;
+    card.style.display = ok ? "" : "none";
+  });
+}
+function renderAccounts(accounts){
+  const container = document.getElementById("accounts-container");
+  const allPaused = accounts.length > 0 && accounts.every(a => a.is_paused || a.status === "PAUSED");
+  document.getElementById("btn-pause-all").innerHTML = allPaused
+    ? '<i class="fa-solid fa-play"></i> ' + t("Resume All") : '<i class="fa-solid fa-pause"></i> ' + t("Pause All");
+
+  if(accounts.length === 0){
+    container.innerHTML = `<div class="empty"><i class="fa-solid fa-ghost"></i>${t("Belum ada node aktif.")}<br><button class="btn primary" onclick="openAddModal()">${t("Inject node pertama")}</button></div>`;
+    return;
+  }
+  container.querySelectorAll(".empty").forEach(e => e.remove());
+  const uids = new Set(accounts.map(a => String(a.uid)));
+  container.querySelectorAll(".node").forEach(c => { if(!uids.has(c.dataset.uid)) c.remove(); });
+
+  accounts.forEach(acc => {
+    const uid = String(acc.uid);
+    const level = Math.max(1, parseInt(acc.level) || 1), nextLvl = Math.min(100, level + 1);
+    const baseExp = EXP_TABLE[level] ?? 0, targetExp = EXP_TABLE[nextLvl] ?? baseExp + 50000;
+    const needed = Math.max(1, targetExp - baseExp), curExp = Number(acc.current_exp || 0);
+    const earned = Math.max(0, curExp - baseExp), remaining = Math.max(0, targetExp - curExp);
+    const pct = level >= 100 ? 100 : Math.min(100, Math.max(0, earned / needed * 100));
+    const paused = Boolean(acc.is_paused || acc.status === "PAUSED");
+    const status = paused ? "PAUSED" : (acc.status || "ONLINE");
+
+    let cls = "s-online", icon = "fa-globe";
+    if(paused){ cls = "s-paused"; icon = "fa-pause"; }
+    else if(status === "IN_MATCH"){ cls = "s-match"; icon = "fa-crosshairs"; }
+    else if(status === "SEARCHING"){ cls = "s-error"; icon = "fa-magnifying-glass"; }
+    else if(status !== "ONLINE"){ cls = "s-error"; icon = "fa-triangle-exclamation"; }
+    const stText = paused ? t("PAUSED") : status === "IN_MATCH" ? `${t("IN MATCH")} (${acc.active_matches || 1})` : status === "ONLINE" ? t("ONLINE") : status === "SEARCHING" ? t("SEARCHING") : status;
+
+    let card = document.getElementById("acc-" + uid);
+    if(!card){ card = document.createElement("div"); card.id = "acc-" + uid; card.className = "node"; container.appendChild(card); }
+    card.dataset.uid = uid; card.dataset.nick = acc.nickname || "";
+    card.dataset.status = cls.replace("s-", ""); card.dataset.paused = paused ? "1" : "0";
+
+    card.innerHTML = `
+      <div class="node-head">
+        <div class="who">
+          <div class="avatar"><i class="fa-solid fa-user-astronaut"></i><span class="lvl">L${level}</span></div>
+          <div style="min-width:0">
+            <div class="name"><span>${esc(acc.nickname || "Unknown")}</span><span class="region">${esc(acc.region || "BD")}</span></div>
+            <div class="uid">UID: ${esc(uid)} <i class="fa-regular fa-copy" onclick="copyUid('${escAttr(uid)}')" title="${t("Salin UID")}"></i></div>
+          </div>
+        </div>
+        <div class="badge ${cls}"><i class="fa-solid ${icon}"></i> ${esc(stText)}</div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span>${t("Base EXP")}</span><strong>${Number(acc.initial_exp || 0).toLocaleString()}</strong></div>
+        <div class="metric"><span>${t("Current")}</span><strong>${curExp.toLocaleString()}</strong></div>
+        <div class="metric gain"><span>${t("Harvested")}</span><strong>+${Number(acc.gained_exp || 0).toLocaleString()}</strong></div>
+      </div>
+      <div>
+        <div class="prog-top"><span>LVL ${level} → LVL ${nextLvl}</span><span>${t("{0} EXP lagi", remaining.toLocaleString())}</span></div>
+        <div class="track"><div class="fill" style="width:${pct.toFixed(1)}%"></div></div>
+        <div class="prog-bot"><span>${earned.toLocaleString()} / ${needed.toLocaleString()}</span><span class="pct">${pct.toFixed(1)}%</span></div>
+      </div>
+      <div class="node-foot">
+        <span class="time acc-time" data-uptime="${Math.floor(acc.uptime_seconds || 0)}" data-paused="${paused ? 1 : 0}"><i class="fa-solid fa-stopwatch"></i> ${fmtDur(acc.uptime_seconds || 0)}</span>
+        <div class="acts">
+          <button class="act" onclick="togglePause('${escAttr(uid)}')" title="${t(paused ? "Resume" : "Pause")}"><i class="fa-solid ${paused ? "fa-play" : "fa-pause"}"></i></button>
+          <button class="act" onclick="restartAcc('${escAttr(uid)}')" title="${t("Restart")}"><i class="fa-solid fa-rotate-right"></i></button>
+          <button class="act" onclick="refreshAcc('${escAttr(uid)}')" title="${t("Sync")}"><i class="fa-solid fa-arrows-rotate"></i></button>
+          <button class="act danger" onclick="deleteAccount('${escAttr(uid)}','${escAttr(acc.auth_uid || "")}')" title="${t("Hapus")}"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>`;
+  });
+  filterAccounts();
+}
+
+/* ---------- Terminal ---------- */
+function setLogFilter(f, btn){
+  activeLogFilter = f;
+  document.querySelectorAll("#log-filters button").forEach(x => x.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+  renderLogs(cachedLogs);
+}
+function renderLogs(logs){
+  const stream = document.getElementById("console-stream");
+  let list = logs || [];
+  if(activeLogFilter === "match") list = list.filter(l => String(l.message || "").toLowerCase().includes("match"));
+  else if(activeLogFilter === "success") list = list.filter(l => l.level === "success" || String(l.message || "").includes("EXP"));
+  else if(activeLogFilter === "error") list = list.filter(l => l.level === "error" || l.level === "warning");
+  stream.innerHTML = list.map(l => `<div class="log"><span class="log-ts">[${esc(l.time || "00:00:00")}]</span><span class="log-msg ${esc(l.level || "info")}">&gt; ${esc(l.message || "")}</span></div>`).join("");
+  if(autoScroll) stream.scrollTop = stream.scrollHeight;
+}
+async function clearLogs(){
+  try{ await fetch("/api/logs/clear", {method:"POST"}); cachedLogs = []; renderLogs([]); toast("Log server dibersihkan", "success"); }
+  catch(e){ toast("Gagal menghapus log di backend", "error"); }
+}
+function styleAutoScroll(){
+  const b = document.getElementById("btn-autoscroll");
+  b.style.background = autoScroll ? "var(--grad-soft)" : ""; b.style.color = autoScroll ? "#fff" : "var(--dim)";
+}
+function toggleAutoScroll(){
+  autoScroll = !autoScroll; styleAutoScroll();
+  if(autoScroll) document.getElementById("console-stream").scrollTop = 999999;
+}
+function handleLogScroll(){
+  const s = document.getElementById("console-stream");
+  if(autoScroll && s.scrollHeight - s.scrollTop - s.clientHeight > 80){ autoScroll = false; styleAutoScroll(); }
+}
+
+/* ---------- Stats ---------- */
+let lastOn = true;
+function setStatus(on){
+  lastOn = on;
+  document.getElementById("side-status").innerText = t(on ? "ONLINE" : "OFFLINE");
+  const s2 = document.getElementById("side-status-2");
+  s2.innerText = t(on ? "ONLINE" : "OFFLINE"); s2.style.color = on ? "var(--ok)" : "var(--err)";
+  document.getElementById("pill").classList.toggle("off", !on);
+  setText("p-status", t(on ? "Online" : "Offline"));
+}
+async function fetchStats(){
+  try{
+    const r = await fetch("/api/stats");
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    const accs = Array.isArray(d.accounts) ? d.accounts : [], logs = Array.isArray(d.logs) ? d.logs : [];
+    setText("stat-accounts", d.total_accounts ?? accs.length);
+    setText("stat-started", d.total_matches_started || 0);
+    setText("stat-exp", "+" + Number(d.total_gained_exp || 0).toLocaleString());
+    setText("stat-active-matches", t("{0} Aktif", d.total_active_matches || 0));
+    setText("stat-online", t("{0} Node terhubung", accs.filter(a => a.status === "ONLINE" || a.status === "IN_MATCH").length));
+    const uptimeH = Math.max(0.016, (d.uptime || 60) / 3600);
+    setText("stat-per-hour", t("~{0} / jam", Math.round((d.total_matches_started || 0) / uptimeH)));
+    setText("stat-exp-rate", t("~{0} EXP/jam", Number(d.exp_per_hour || 0).toLocaleString()));
+    setText("p-nodes", d.total_accounts ?? accs.length);
+    setText("p-matches", d.total_matches_started || 0);
+    setText("p-exp", "+" + Number(d.total_gained_exp || 0).toLocaleString());
+    setText("p-rate", Number(d.exp_per_hour || 0).toLocaleString());
+    cachedLogs = logs;
+    renderAccounts(accs); renderLogs(logs); setStatus(true);
+  }catch(e){ console.warn("Backend Sync Error:", e); setStatus(false); }
+}
+
+/* ---------- Utils ---------- */
+function copyText(txt, label){
+  const ok = () => toast(t("{0} disalin: {1}", label, txt), "success");
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, () => toast(label + ": " + txt));
+  else toast(label + ": " + txt);
+}
+function copyUid(uid){ copyText(uid, "UID"); }
+const COUNT=new Set(["stat-accounts","stat-started","stat-exp","p-nodes","p-matches","p-exp","p-rate"]), tw={};
+function setText(id, v){
+  const el = document.getElementById(id); if(!el) return;
+  const str = String(v ?? ""), m = COUNT.has(id) && str.match(/^(\+?)([\d,]+)$/);
+  if(!m){ el.innerText = str; return; }
+  const to = parseInt(m[2].replace(/,/g,"")), from = parseFloat(el.dataset.n || 0);
+  if(from === to){ el.innerText = str; return; }
+  el.dataset.n = to; const t0 = performance.now(); cancelAnimationFrame(tw[id]);
+  const step = t => { const k = Math.min(1,(t-t0)/800), e = 1-Math.pow(1-k,3);
+    el.innerText = m[1] + Math.round(from+(to-from)*e).toLocaleString();
+    if(k<1) tw[id] = requestAnimationFrame(step); else el.innerText = str; };
+  tw[id] = requestAnimationFrame(step);
+}
+document.addEventListener("pointermove", e => {
+  const c = e.target.closest && e.target.closest(".stat,.node,.hero,.info"); if(!c) return;
+  const r = c.getBoundingClientRect();
+  c.style.setProperty("--mx",(e.clientX-r.left)+"px"); c.style.setProperty("--my",(e.clientY-r.top)+"px");
+});
+function esc(s){ return s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function escAttr(s){ return esc(s); }
+function fmtDur(sec){
+  sec = Math.max(0, Math.floor(Number(sec) || 0));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return h > 0 ? `${h}h ${String(m).padStart(2,"0")}m` : `${String(m).padStart(2,"0")}m ${String(s).padStart(2,"0")}s`;
+}
+
+setInterval(() => {
+  const el = Math.floor((Date.now() - clientStart) / 1000), p = n => String(n).padStart(2, "0");
+  const up = `${p(Math.floor(el / 3600))}:${p(Math.floor((el % 3600) / 60))}:${p(el % 60)}`;
+  setText("stat-uptime", up); setText("p-uptime", up);
+  document.querySelectorAll(".acc-time").forEach(u => {
+    if(u.dataset.paused === "1") return;
+    const v = parseInt(u.dataset.uptime || "0") + 1;
+    u.dataset.uptime = v;
+    u.innerHTML = `<i class="fa-solid fa-stopwatch"></i> ${fmtDur(v)}`;
+  });
+}, 1000);
+
+styleAutoScroll();
+let saved = "id"; try{ saved = localStorage.getItem("lang") || "id"; }catch(e){}
+applyLang(saved, false);
+fetchStats();
+setInterval(fetchStats, 5000);
+</script>
+</body>
+</html>
